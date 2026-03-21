@@ -91,6 +91,9 @@ export class KonvaAdapter {
     this.overlayWorldGroup.position({ x: offsetX, y: offsetY })
     this.overlayWorldGroup.scale({ x: scale, y: scale })
 
+    // Sync live iframe overlays FIRST so renderCards knows which cards have active iframes
+    this.liveOverlays.update()
+
     this.renderBackground()
     this.renderCards(cards)
     this.renderSelectionOverlay()
@@ -98,9 +101,6 @@ export class KonvaAdapter {
     this.bgLayer.batchDraw()
     this.contentLayer.batchDraw()
     this.overlayLayer.batchDraw()
-
-    // Sync live iframe overlays
-    this.liveOverlays.update()
   }
 
   // ---------------------------------------------------------------------------
