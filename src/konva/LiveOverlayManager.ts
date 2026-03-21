@@ -18,13 +18,17 @@ interface MountedOverlay {
 
 export class LiveOverlayManager {
   private editor: EditorCore
-  private container: HTMLElement
+  private parentContainer: HTMLElement
   private overlays = new Map<string, MountedOverlay>()
   private minScreenArea: number
 
-  constructor(editor: EditorCore, container: HTMLElement, opts: LiveOverlayManagerOptions = {}) {
+  constructor(
+    editor: EditorCore,
+    parentContainer: HTMLElement,
+    opts: LiveOverlayManagerOptions = {},
+  ) {
     this.editor = editor
-    this.container = container
+    this.parentContainer = parentContainer
     this.minScreenArea = opts.minScreenArea ?? MIN_SCREEN_AREA
   }
 
@@ -80,7 +84,7 @@ export class LiveOverlayManager {
         this.overlays.set(cardId, overlay)
       }
 
-      // Position the wrapper at the card's screen position/size
+      // Position wrapper at card's screen rect
       const w = overlay.wrapper
       w.style.left = `${screenRect.x}px`
       w.style.top = `${screenRect.y}px`
@@ -99,7 +103,7 @@ export class LiveOverlayManager {
         overlay.iframe.style.transformOrigin = 'top left'
       }
 
-      // Disable pointer events on non-focused overlays so canvas interactions pass through
+      // Only focused card gets pointer events — all others pass through to canvas
       const isFocused = runtime.selection.focusedId === cardId
       w.style.pointerEvents = isFocused ? 'auto' : 'none'
     }
@@ -127,6 +131,7 @@ export class LiveOverlayManager {
     wrapper.style.position = 'absolute'
     wrapper.style.overflow = 'hidden'
     wrapper.style.borderRadius = '10px'
+    wrapper.style.pointerEvents = 'none'
     wrapper.dataset.cardOverlay = card.id
 
     const iframe = document.createElement('iframe')
@@ -135,6 +140,7 @@ export class LiveOverlayManager {
     iframe.style.border = 'none'
     iframe.style.borderRadius = '10px'
     iframe.style.background = '#fff'
+    iframe.style.pointerEvents = 'none'
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups')
     iframe.title = card.title
 
@@ -149,7 +155,7 @@ export class LiveOverlayManager {
     }
 
     wrapper.appendChild(iframe)
-    this.container.appendChild(wrapper)
+    this.parentContainer.appendChild(wrapper)
 
     return { cardId: card.id, iframe, wrapper }
   }
