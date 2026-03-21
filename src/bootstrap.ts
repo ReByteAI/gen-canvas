@@ -508,7 +508,28 @@ demoContent.set('mdn-docs', {
   url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe',
 })
 
-// Thumbnails
+// Thumbnails for HTML cards (shown during browse mode)
+demoContent.set('thumb-landing', {
+  type: 'image',
+  src: 'https://picsum.photos/seed/landing/1040/1160',
+})
+demoContent.set('thumb-pricing', {
+  type: 'image',
+  src: 'https://picsum.photos/seed/pricing/1280/960',
+})
+demoContent.set('thumb-signup', {
+  type: 'image',
+  src: 'https://picsum.photos/seed/signup/800/1280',
+})
+demoContent.set('thumb-dashboard', {
+  type: 'image',
+  src: 'https://picsum.photos/seed/dashboard/1120/1040',
+})
+demoContent.set('thumb-mobile', {
+  type: 'image',
+  src: 'https://picsum.photos/seed/mobile/750/1400',
+})
+demoContent.set('thumb-chat', { type: 'image', src: 'https://picsum.photos/seed/chat/760/1080' })
 demoContent.set('thumb-wikipedia', {
   type: 'image',
   src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=960&h=800&fit=crop',
@@ -540,6 +561,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'landing-page',
     contentType: 'html',
+    thumbnailRef: 'thumb-landing',
     capabilities: CAP_FULL,
   },
   {
@@ -558,6 +580,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'pricing-page',
     contentType: 'html',
+    thumbnailRef: 'thumb-pricing',
     capabilities: CAP_FULL,
   },
   {
@@ -576,6 +599,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'signup-form',
     contentType: 'html',
+    thumbnailRef: 'thumb-signup',
     capabilities: CAP_FULL,
   },
 
@@ -596,6 +620,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'dashboard',
     contentType: 'html',
+    thumbnailRef: 'thumb-dashboard',
     capabilities: CAP_FULL,
   },
   {
@@ -614,6 +639,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'mobile-app',
     contentType: 'html',
+    thumbnailRef: 'thumb-mobile',
     capabilities: CAP_FULL,
   },
   {
@@ -632,6 +658,7 @@ const DEMO_CARDS: CardRecord[] = [
     updatedAt: now,
     contentRef: 'chat-ui',
     contentType: 'html',
+    thumbnailRef: 'thumb-chat',
     capabilities: CAP_FULL,
   },
 

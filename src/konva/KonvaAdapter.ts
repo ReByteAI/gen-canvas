@@ -118,8 +118,6 @@ export class KonvaAdapter {
     this.worldGroup.destroyChildren()
 
     for (const card of cards.sort((a, b) => a.zIndex - b.zIndex)) {
-      const plugin = this.editor.plugins.get(card.type)
-      const descriptor = plugin.getRenderDescriptor(card)
       const frameRect = resolveCardRect(this.editor, card)
 
       const group = new Konva.Group({
@@ -143,26 +141,20 @@ export class KonvaAdapter {
         }),
       )
 
-      // Resolve thumbnail: use thumbnailRef, or for image-type cards resolve contentRef
-      let imageUrl = descriptor.src
-      if (!imageUrl && card.thumbnailRef) {
+      // Resolve an image URL for the card preview.
+      // Try thumbnailRef first, then contentRef for image-type cards.
+      // All refs go through the content provider to get actual URLs.
+      let imageUrl: string | undefined
+      const refToResolve =
+        card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined)
+      if (refToResolve) {
         try {
-          const resolved = this.editor.content.resolve(card.thumbnailRef, 'image')
+          const resolved = this.editor.content.resolve(refToResolve, 'image')
           if (!(resolved instanceof Promise) && resolved.type === 'image') {
             imageUrl = resolved.src
           }
         } catch {
-          // no thumbnail available
-        }
-      }
-      if (!imageUrl && card.contentRef && card.contentType === 'image') {
-        try {
-          const resolved = this.editor.content.resolve(card.contentRef, 'image')
-          if (!(resolved instanceof Promise) && resolved.type === 'image') {
-            imageUrl = resolved.src
-          }
-        } catch {
-          // no content available
+          // ref not resolvable — no preview
         }
       }
       if (imageUrl) {
