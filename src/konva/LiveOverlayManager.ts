@@ -80,13 +80,24 @@ export class LiveOverlayManager {
         this.overlays.set(cardId, overlay)
       }
 
-      // Update position and size
+      // Position the wrapper at the card's screen position/size
       const w = overlay.wrapper
       w.style.left = `${screenRect.x}px`
       w.style.top = `${screenRect.y}px`
       w.style.width = `${screenRect.width}px`
       w.style.height = `${screenRect.height}px`
       w.style.zIndex = `${50 + card.zIndex}`
+
+      // Scale the iframe: render at world size, CSS-scale to screen size
+      const frame = this.editor.getCardFrame(card.id)
+      if (frame) {
+        const scaleX = screenRect.width / frame.width
+        const scaleY = screenRect.height / frame.height
+        overlay.iframe.style.width = `${frame.width}px`
+        overlay.iframe.style.height = `${frame.height}px`
+        overlay.iframe.style.transform = `scale(${scaleX}, ${scaleY})`
+        overlay.iframe.style.transformOrigin = 'top left'
+      }
 
       // Disable pointer events on non-focused overlays so canvas interactions pass through
       const isFocused = runtime.selection.focusedId === cardId
