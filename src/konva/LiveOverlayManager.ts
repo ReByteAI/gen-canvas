@@ -2,136 +2,119 @@ import { worldToScreen } from '../core/geometry'
 import type { EditorCore } from '../core/EditorCore'
 import type { CardRecord, CameraState, ResolvedContent } from '../core/types'
 
-/** Minimum screen-space area (px^2) before a live overlay is shown */
-const MIN_SCREEN_AREA = 120 * 120
-
-export interface LiveOverlayManagerOptions {
-  /** Minimum screen-space area before live iframe is mounted. Default: 14400 (120x120) */
-  minScreenArea?: number
-}
-
 interface MountedOverlay {
   cardId: string
   iframe: HTMLIFrameElement
   wrapper: HTMLDivElement
 }
 
+/**
+ * Manages a single live iframe overlay for the focused card.
+ *
+ * Browse mode: no iframes, no DOM overlays. Cards render as Konva previews.
+ * Focus mode (double-click): mounts one iframe for the focused card so the
+ * user can interact with the live content. Destroyed on focus exit.
+ */
 export class LiveOverlayManager {
   private editor: EditorCore
   private parentContainer: HTMLElement
-  private overlays = new Map<string, MountedOverlay>()
-  private minScreenArea: number
+  private activeOverlay: MountedOverlay | null = null
 
-  constructor(
-    editor: EditorCore,
-    parentContainer: HTMLElement,
-    opts: LiveOverlayManagerOptions = {},
-  ) {
+  constructor(editor: EditorCore, parentContainer: HTMLElement) {
     this.editor = editor
     this.parentContainer = parentContainer
-    this.minScreenArea = opts.minScreenArea ?? MIN_SCREEN_AREA
   }
 
   /**
-   * Called every render frame. Syncs live overlay iframes to the current camera/card state.
-   * Mounts new overlays, removes stale ones, and repositions existing ones.
+   * Called every render frame. Mounts/unmounts the focused card iframe.
    */
   update(): void {
     const runtime = this.editor.getRuntime()
-    const camera = runtime.camera
-    const cards = this.editor.getVisibleCards()
+    const focusedId = runtime.selection.focusedId
 
-    // Don't show overlays during drag/resize/pan for performance
-    const suppressOverlays =
+    // No focused card → remove any existing overlay
+    if (!focusedId) {
+      this.unmountOverlay()
+      return
+    }
+
+    const card = this.editor.getCard(focusedId)
+    if (!card || !card.contentRef || !card.contentType || card.contentType === 'image') {
+      this.unmountOverlay()
+      return
+    }
+
+    // Hide during drag/resize so canvas events work
+    if (
       runtime.interaction.mode === 'dragging-card' ||
-      runtime.interaction.mode === 'resizing-card' ||
-      runtime.interaction.mode === 'panning'
-
-    const wantedIds = new Set<string>()
-
-    if (!suppressOverlays) {
-      for (const card of cards) {
-        if (!card.contentRef || !card.contentType) continue
-        if (card.contentType === 'image') continue // images render in Konva
-
-        const screenRect = this.getScreenRect(card, camera)
-        const screenArea = screenRect.width * screenRect.height
-
-        if (screenArea >= this.minScreenArea) {
-          wantedIds.add(card.id)
-        }
+      runtime.interaction.mode === 'resizing-card'
+    ) {
+      if (this.activeOverlay) {
+        this.activeOverlay.wrapper.style.visibility = 'hidden'
       }
+      return
     }
 
-    // Remove overlays that are no longer wanted
-    for (const [cardId, overlay] of this.overlays) {
-      if (!wantedIds.has(cardId)) {
-        overlay.wrapper.remove()
-        this.overlays.delete(cardId)
-      }
+    // Mount if not already mounted for this card
+    if (!this.activeOverlay || this.activeOverlay.cardId !== focusedId) {
+      this.unmountOverlay()
+      this.activeOverlay = this.mount(card)
     }
 
-    // Mount or update wanted overlays
-    for (const cardId of wantedIds) {
-      const card = this.editor.getCard(cardId)
-      if (!card || !card.contentRef || !card.contentType) continue
+    // Position and scale
+    const camera = runtime.camera
+    const screenRect = this.getScreenRect(card, camera)
+    const frame = this.editor.getCardFrame(card.id)
+    const w = this.activeOverlay.wrapper
 
-      const screenRect = this.getScreenRect(card, camera)
-      let overlay = this.overlays.get(cardId)
+    w.style.left = `${screenRect.x}px`
+    w.style.top = `${screenRect.y}px`
+    w.style.width = `${screenRect.width}px`
+    w.style.height = `${screenRect.height}px`
+    w.style.visibility = 'visible'
+    w.style.zIndex = `${1000 + card.zIndex}`
 
-      if (!overlay) {
-        overlay = this.mount(card)
-        this.overlays.set(cardId, overlay)
-      }
-
-      // Position wrapper at card's screen rect
-      const w = overlay.wrapper
-      w.style.left = `${screenRect.x}px`
-      w.style.top = `${screenRect.y}px`
-      w.style.width = `${screenRect.width}px`
-      w.style.height = `${screenRect.height}px`
-      w.style.zIndex = `${50 + card.zIndex}`
-
-      // Scale the iframe: render at world size, CSS-scale to screen size
-      const frame = this.editor.getCardFrame(card.id)
-      if (frame) {
-        const scaleX = screenRect.width / frame.width
-        const scaleY = screenRect.height / frame.height
-        overlay.iframe.style.width = `${frame.width}px`
-        overlay.iframe.style.height = `${frame.height}px`
-        overlay.iframe.style.transform = `scale(${scaleX}, ${scaleY})`
-        overlay.iframe.style.transformOrigin = 'top left'
-      }
-
-      // Only focused card gets pointer events — all others pass through to canvas
-      const isFocused = runtime.selection.focusedId === cardId
-      w.style.pointerEvents = isFocused ? 'auto' : 'none'
+    if (frame) {
+      const scaleX = screenRect.width / frame.width
+      const scaleY = screenRect.height / frame.height
+      this.activeOverlay.iframe.style.width = `${frame.width}px`
+      this.activeOverlay.iframe.style.height = `${frame.height}px`
+      this.activeOverlay.iframe.style.transform = `scale(${scaleX}, ${scaleY})`
+      this.activeOverlay.iframe.style.transformOrigin = 'top left'
     }
   }
 
-  /** Check if a card currently has a live overlay mounted */
+  /** Check if a card currently has a visible live overlay */
   hasOverlay(cardId: string): boolean {
-    return this.overlays.has(cardId)
+    return (
+      this.activeOverlay !== null &&
+      this.activeOverlay.cardId === cardId &&
+      this.activeOverlay.wrapper.style.visibility !== 'hidden'
+    )
   }
 
-  /** Destroy all overlays and clean up */
+  /** Destroy everything */
   destroy(): void {
-    for (const [, overlay] of this.overlays) {
-      overlay.wrapper.remove()
-    }
-    this.overlays.clear()
+    this.unmountOverlay()
   }
 
   // ---------------------------------------------------------------------------
   // Private
   // ---------------------------------------------------------------------------
 
+  private unmountOverlay(): void {
+    if (this.activeOverlay) {
+      this.activeOverlay.wrapper.remove()
+      this.activeOverlay = null
+    }
+  }
+
   private mount(card: CardRecord): MountedOverlay {
     const wrapper = document.createElement('div')
     wrapper.style.position = 'absolute'
     wrapper.style.overflow = 'hidden'
     wrapper.style.borderRadius = '10px'
-    wrapper.style.pointerEvents = 'none'
+    wrapper.style.pointerEvents = 'auto'
     wrapper.dataset.cardOverlay = card.id
 
     const iframe = document.createElement('iframe')
@@ -140,11 +123,9 @@ export class LiveOverlayManager {
     iframe.style.border = 'none'
     iframe.style.borderRadius = '10px'
     iframe.style.background = '#fff'
-    iframe.style.pointerEvents = 'none'
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups')
     iframe.title = card.title
 
-    // Resolve content through the provider
     if (card.contentRef && card.contentType) {
       const resolved = this.editor.content.resolve(card.contentRef, card.contentType)
       if (resolved instanceof Promise) {
