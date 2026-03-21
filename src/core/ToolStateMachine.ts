@@ -350,6 +350,43 @@ export class ToolStateMachine {
           return
         }
 
+        // Copy / Paste / Duplicate
+        if (event.meta && key === 'c') {
+          this.editor.copySelected()
+          return
+        }
+        if (event.meta && key === 'v') {
+          this.editor.pasteClipboard()
+          return
+        }
+        if (event.meta && key === 'd') {
+          this.editor.duplicateCards(this.editor.getSelectedCards().map((c) => c.id))
+          return
+        }
+
+        // Select all
+        if (event.meta && key === 'a') {
+          this.editor.selectAll()
+          return
+        }
+
+        // Group / Ungroup
+        if (event.meta && event.shift && key === 'g') {
+          this.editor.ungroupSelected()
+          return
+        }
+        if (event.meta && key === 'g') {
+          this.editor.groupSelected()
+          return
+        }
+
+        // Favorite
+        if (event.shift && key === 'f') {
+          const card = this.editor.getSelectedCards()[0]
+          if (card) this.editor.toggleFavorite(card.id)
+          return
+        }
+
         // Undo/redo
         if (event.meta && key === 'z') {
           if (event.shift) {

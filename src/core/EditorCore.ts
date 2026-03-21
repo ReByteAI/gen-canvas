@@ -12,7 +12,9 @@ import {
 } from './snapping'
 import { IntentBus } from './IntentBus'
 import type {
+  BindingRecord,
   CardRecord,
+  ClipboardPayload,
   EditorAPI,
   EditorIntent,
   Point,
@@ -46,6 +48,8 @@ export class EditorCore implements EditorAPI {
         before: ReturnType<EditorStore['exportSnapshot']>
       }
     | undefined
+
+  private clipboard: ClipboardPayload | undefined
 
   constructor(args: {
     store: EditorStore
@@ -503,7 +507,27 @@ export class EditorCore implements EditorAPI {
   ): void {
     this.run(() => {
       this.store.updateRecords((records) => {
+        // Collect group children and bindings to cascade delete
+        const allDeleteIds = new Set(ids)
         for (const id of ids) {
+          const card = records.cards[id]
+          if (card?.type === 'group') {
+            for (const b of Object.values(records.bindings)) {
+              if (b.type === 'group-child' && b.fromId === id) {
+                allDeleteIds.add(b.toId)
+              }
+            }
+          }
+        }
+
+        // Remove bindings referencing deleted cards
+        for (const [bId, b] of Object.entries(records.bindings)) {
+          if (allDeleteIds.has(b.fromId) || allDeleteIds.has(b.toId)) {
+            delete records.bindings[bId]
+          }
+        }
+
+        for (const id of allDeleteIds) {
           delete records.cards[id]
         }
         records.document.updatedAt = now()
@@ -531,7 +555,20 @@ export class EditorCore implements EditorAPI {
   ): void {
     this.run(() => {
       this.store.updateRecords((records) => {
+        // Collect group children so they move with their parent
+        const allIds = new Set(ids)
         for (const id of ids) {
+          const card = records.cards[id]
+          if (card?.type === 'group') {
+            for (const b of Object.values(records.bindings)) {
+              if (b.type === 'group-child' && b.fromId === id) {
+                allIds.add(b.toId)
+              }
+            }
+          }
+        }
+
+        for (const id of allIds) {
           const card = records.cards[id]
           if (!card || card.locked || !card.capabilities.movable) continue
           card.x += dx
@@ -960,6 +997,195 @@ export class EditorCore implements EditorAPI {
       },
       ['snap'],
     )
+  }
+
+  // ---------------------------------------------------------------------------
+  // Clipboard
+  // ---------------------------------------------------------------------------
+
+  copySelected(): void {
+    const selected = this.getSelectedCards()
+    if (selected.length === 0) return
+
+    const ids = new Set(selected.map((c) => c.id))
+    const records = this.store.getRecords()
+
+    // Collect bindings where both ends are in the selection
+    const bindings = Object.values(records.bindings).filter(
+      (b) => ids.has(b.fromId) && ids.has(b.toId),
+    )
+
+    // Compute center of selection for paste offset
+    const bounds = this.getSelectionBounds()!
+    this.clipboard = {
+      cards: selected.map((c) => ({ ...c })),
+      bindings: bindings.map((b) => ({ ...b })),
+      centerX: bounds.x + bounds.width / 2,
+      centerY: bounds.y + bounds.height / 2,
+    }
+  }
+
+  pasteClipboard(opts: TransactionOptions = { history: 'record', label: 'Paste' }): RecordId[] {
+    if (!this.clipboard || this.clipboard.cards.length === 0) return []
+
+    const idMap = new Map<RecordId, RecordId>()
+    const pastedIds: RecordId[] = []
+    const offset = 40
+
+    // Map old ids to new ids
+    for (const card of this.clipboard.cards) {
+      idMap.set(card.id, makeId('card'))
+    }
+    for (const binding of this.clipboard.bindings) {
+      idMap.set(binding.id, makeId('bind'))
+    }
+
+    this.run(() => {
+      this.store.updateRecords((records) => {
+        for (const card of this.clipboard!.cards) {
+          const newId = idMap.get(card.id)!
+          pastedIds.push(newId)
+          records.cards[newId] = {
+            ...card,
+            id: newId,
+            x: card.x + offset,
+            y: card.y + offset,
+            createdAt: now(),
+            updatedAt: now(),
+            title: card.title,
+          }
+        }
+
+        for (const binding of this.clipboard!.bindings) {
+          const newId = idMap.get(binding.id)!
+          records.bindings[newId] = {
+            ...binding,
+            id: newId,
+            fromId: idMap.get(binding.fromId) ?? binding.fromId,
+            toId: idMap.get(binding.toId) ?? binding.toId,
+          }
+        }
+
+        records.document.updatedAt = now()
+      })
+    }, opts)
+
+    this.selectCards(pastedIds)
+    return pastedIds
+  }
+
+  hasClipboard(): boolean {
+    return !!this.clipboard && this.clipboard.cards.length > 0
+  }
+
+  // ---------------------------------------------------------------------------
+  // Select all
+  // ---------------------------------------------------------------------------
+
+  selectAll(): void {
+    const ids = this.getVisibleCards()
+      .filter((c) => c.capabilities.selectable)
+      .map((c) => c.id)
+    this.selectCards(ids)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grouping
+  // ---------------------------------------------------------------------------
+
+  groupSelected(
+    opts: TransactionOptions = { history: 'record', label: 'Group cards' },
+  ): RecordId | null {
+    const selected = this.getSelectedCards()
+    if (selected.length < 2) return null
+
+    const bounds = this.getSelectionBounds()
+    if (!bounds) return null
+
+    const groupId = makeId('group')
+    const groupCard: CardRecord = {
+      id: groupId,
+      type: 'group',
+      title: 'Group',
+      x: bounds.x - 8,
+      y: bounds.y - 8,
+      width: bounds.width + 16,
+      height: bounds.height + 16,
+      zIndex: Math.max(...selected.map((c) => c.zIndex)) + 1,
+      visible: true,
+      locked: false,
+      favorite: false,
+      createdAt: now(),
+      updatedAt: now(),
+      capabilities: {
+        selectable: true,
+        focusable: false,
+        movable: true,
+        resizable: false,
+        exportable: false,
+        downloadable: false,
+        viewCode: false,
+        liveOverlay: false,
+      },
+    }
+
+    this.run(() => {
+      this.store.updateRecords((records) => {
+        records.cards[groupId] = groupCard
+
+        for (const card of selected) {
+          const bindingId = makeId('bind')
+          records.bindings[bindingId] = {
+            id: bindingId,
+            type: 'group-child',
+            fromId: groupId,
+            toId: card.id,
+          }
+        }
+
+        records.document.updatedAt = now()
+      })
+    }, opts)
+
+    this.selectCards([groupId])
+    return groupId
+  }
+
+  ungroupSelected(opts: TransactionOptions = { history: 'record', label: 'Ungroup cards' }): void {
+    const selected = this.getSelectedCards()
+    const groupIds = selected.filter((c) => c.type === 'group').map((c) => c.id)
+    if (groupIds.length === 0) return
+
+    const allChildIds: RecordId[] = []
+
+    this.run(() => {
+      this.store.updateRecords((records) => {
+        for (const groupId of groupIds) {
+          // Find children
+          const childBindings = Object.values(records.bindings).filter(
+            (b) => b.type === 'group-child' && b.fromId === groupId,
+          )
+          for (const binding of childBindings) {
+            allChildIds.push(binding.toId)
+            delete records.bindings[binding.id]
+          }
+
+          // Remove group card
+          delete records.cards[groupId]
+        }
+
+        records.document.updatedAt = now()
+      })
+    }, opts)
+
+    this.selectCards(allChildIds)
+  }
+
+  getGroupChildren(groupId: RecordId): RecordId[] {
+    const bindings = this.store.getRecords().bindings
+    return Object.values(bindings)
+      .filter((b) => b.type === 'group-child' && b.fromId === groupId)
+      .map((b) => b.toId)
   }
 
   // ---------------------------------------------------------------------------

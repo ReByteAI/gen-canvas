@@ -399,6 +399,18 @@ export interface CardPlugin<T extends CardRecord = CardRecord> {
 }
 
 // ---------------------------------------------------------------------------
+// Clipboard
+// ---------------------------------------------------------------------------
+
+export interface ClipboardPayload {
+  cards: CardRecord[]
+  bindings: BindingRecord[]
+  /** The bounding box center of copied cards, used to compute paste offset */
+  centerX: number
+  centerY: number
+}
+
+// ---------------------------------------------------------------------------
 // Transaction / history
 // ---------------------------------------------------------------------------
 
@@ -479,6 +491,19 @@ export interface EditorAPI {
   setSnapMode(mode: SnapMode): void
   setSnapEnabled(enabled: boolean): void
   setSnapBypass(bypass: boolean): void
+
+  // Clipboard
+  copySelected(): void
+  pasteClipboard(opts?: TransactionOptions): RecordId[]
+  hasClipboard(): boolean
+
+  // Select all
+  selectAll(): void
+
+  // Grouping
+  groupSelected(opts?: TransactionOptions): RecordId | null
+  ungroupSelected(opts?: TransactionOptions): void
+  getGroupChildren(groupId: RecordId): RecordId[]
 
   // Intents
   emitIntent(intent: EditorIntent): void
