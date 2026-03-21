@@ -1,6 +1,6 @@
 # kanva-editor
 
-**An open-source Figma-like container for generative content.**
+**Figma for GenAI content.**
 
 ![kanva-editor demo](.github/assets/demo-screenshot.png)
 

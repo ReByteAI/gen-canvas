@@ -1,7 +1,7 @@
 {
   "name": "kanva-editor",
   "version": "0.1.0",
-  "description": "An open-source Figma-like container for generative content, built on Konva.js",
+  "description": "Figma for GenAI content. An open-source infinite canvas for agent-generated artifacts, built on Konva.js",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
