@@ -105,6 +105,11 @@ export class LiveOverlayManager {
     }
   }
 
+  /** Check if a card currently has a live overlay mounted */
+  hasOverlay(cardId: string): boolean {
+    return this.overlays.has(cardId)
+  }
+
   /** Destroy all overlays and clean up */
   destroy(): void {
     for (const [, overlay] of this.overlays) {

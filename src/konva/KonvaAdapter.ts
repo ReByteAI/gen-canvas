@@ -135,17 +135,19 @@ export class KonvaAdapter {
         attrs: { editorRole: 'card-body', cardId: card.id },
       })
 
+      // Only show the Konva background when no live iframe is covering this card
+      const hasLiveOverlay = this.liveOverlays.hasOverlay(card.id)
       group.add(
         new Konva.Rect({
           x: 0,
           y: 0,
           width: frameRect.width,
           height: frameRect.height,
-          fill: '#1d232b',
-          stroke: '#2f3944',
+          fill: hasLiveOverlay ? 'transparent' : '#1d232b',
+          stroke: hasLiveOverlay ? 'transparent' : '#2f3944',
           strokeWidth: 1,
           cornerRadius: 10,
-          shadowBlur: 8,
+          shadowBlur: hasLiveOverlay ? 0 : 8,
           shadowOpacity: 0.08,
         }),
       )
