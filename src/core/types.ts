@@ -331,6 +331,7 @@ export type NormalizedInputEvent =
       type: 'wheel'
       screen: Point
       world: Point
+      deltaX: number
       deltaY: number
       ctrlKey: boolean
     }

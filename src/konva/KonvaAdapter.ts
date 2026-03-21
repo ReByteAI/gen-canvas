@@ -483,6 +483,7 @@ export class KonvaAdapter {
         type: 'wheel',
         screen: d.screen,
         world: d.world,
+        deltaX: evt.evt.deltaX,
         deltaY: evt.evt.deltaY,
         ctrlKey: evt.evt.ctrlKey,
       })

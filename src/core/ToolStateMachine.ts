@@ -285,8 +285,15 @@ export class ToolStateMachine {
       }
 
       case 'wheel': {
-        const factor = Math.exp(-event.deltaY * WHEEL_ZOOM_STEP)
-        this.editor.zoomBy(factor, event.screen)
+        if (event.ctrlKey) {
+          // Pinch-to-zoom on trackpad (or Ctrl+wheel on mouse)
+          const factor = Math.exp(-event.deltaY * WHEEL_ZOOM_STEP)
+          this.editor.zoomBy(factor, event.screen)
+        } else {
+          // Two-finger scroll on trackpad (or regular mouse wheel) → pan
+          const cam = this.editor.getRuntime().camera
+          this.editor.panBy(event.deltaX / cam.scale, event.deltaY / cam.scale)
+        }
         return
       }
 
