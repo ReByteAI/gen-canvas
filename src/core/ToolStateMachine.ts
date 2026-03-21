@@ -63,6 +63,13 @@ export class ToolStateMachine {
           return
         }
 
+        // Focus button — enter interactive mode immediately
+        if (event.target?.kind === 'focus-button' && event.target.cardId) {
+          this.editor.selectCard(event.target.cardId)
+          this.editor.focusCard(event.target.cardId)
+          return
+        }
+
         // Card body
         if (event.target?.kind === 'card' && event.target.cardId) {
           if (!selection.selectedIds.includes(event.target.cardId)) {

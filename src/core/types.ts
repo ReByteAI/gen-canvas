@@ -290,7 +290,7 @@ export interface SelectedChatContext {
 // ---------------------------------------------------------------------------
 
 export interface HitTarget {
-  kind: 'card' | 'resize-handle' | 'empty'
+  kind: 'card' | 'resize-handle' | 'focus-button' | 'empty'
   cardId?: RecordId
   handle?: ResizeHandle
 }

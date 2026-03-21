@@ -217,6 +217,42 @@ export class KonvaAdapter {
         }),
       )
 
+      // Focus button — shown for cards with interactive content (html/url)
+      if (
+        card.capabilities.focusable &&
+        card.contentRef &&
+        (card.contentType === 'html' || card.contentType === 'url')
+      ) {
+        const btnSize = 20
+        const btnX = frameRect.width - btnSize - 8
+        const btnY = -28
+
+        // Button background
+        group.add(
+          new Konva.Rect({
+            x: btnX - 4,
+            y: btnY - 2,
+            width: btnSize + 8,
+            height: btnSize + 4,
+            fill: '#2a2f38',
+            cornerRadius: 6,
+            attrs: { editorRole: 'focus-button', cardId: card.id },
+          }),
+        )
+
+        // Play/expand icon
+        group.add(
+          new Konva.Text({
+            x: btnX,
+            y: btnY,
+            text: '\u25B6',
+            fontSize: 14,
+            fill: '#8b95a5',
+            attrs: { editorRole: 'focus-button', cardId: card.id },
+          }),
+        )
+      }
+
       if (card.favorite) {
         group.add(
           new Konva.Text({
@@ -484,6 +520,12 @@ export class KonvaAdapter {
           kind: 'resize-handle',
           cardId: attrs.cardId as RecordId,
           handle: attrs.handle as ResizeHandle,
+        }
+      }
+      if (attrs.editorRole === 'focus-button') {
+        return {
+          kind: 'focus-button',
+          cardId: attrs.cardId as RecordId,
         }
       }
       if (attrs.editorRole === 'card-body') {
