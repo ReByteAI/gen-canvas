@@ -3,7 +3,7 @@ import type { NormalizedInputEvent } from './types'
 import { rectFromPoints } from './geometry'
 
 const DRAG_START_DISTANCE_PX = 4
-const WHEEL_ZOOM_STEP = 0.0015
+const WHEEL_ZOOM_STEP = 0.01
 function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
   const dx = a.x - b.x
   const dy = a.y - b.y
