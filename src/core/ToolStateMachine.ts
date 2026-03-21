@@ -4,9 +4,6 @@ import { rectFromPoints } from './geometry'
 
 const DRAG_START_DISTANCE_PX = 4
 const WHEEL_ZOOM_STEP = 0.0015
-const DOUBLE_CLICK_MS = 400
-const DOUBLE_CLICK_DISTANCE_PX = 8
-
 function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
   const dx = a.x - b.x
   const dy = a.y - b.y
@@ -14,10 +11,6 @@ function distance(a: { x: number; y: number }, b: { x: number; y: number }): num
 }
 
 export class ToolStateMachine {
-  private lastClickTime = 0
-  private lastClickCardId: string | undefined
-  private lastClickScreen = { x: 0, y: 0 }
-
   constructor(private editor: EditorCore) {}
 
   handle(event: NormalizedInputEvent): void {
@@ -262,26 +255,6 @@ export class ToolStateMachine {
         } else if (interaction.mode === 'pointing') {
           if (!interaction.targetCardId && !event.button) {
             this.editor.clearSelection()
-          }
-
-          // Manual double-click detection: Konva's dblclick event doesn't fire
-          // because we destroy/recreate nodes between clicks (re-render on select).
-          if (interaction.targetCardId) {
-            const now = Date.now()
-            const sameCard = this.lastClickCardId === interaction.targetCardId
-            const fastEnough = now - this.lastClickTime < DOUBLE_CLICK_MS
-            const closeEnough =
-              distance(this.lastClickScreen, event.screen) < DOUBLE_CLICK_DISTANCE_PX
-
-            if (sameCard && fastEnough && closeEnough) {
-              this.editor.focusCard(interaction.targetCardId)
-              this.lastClickTime = 0
-              this.lastClickCardId = undefined
-            } else {
-              this.lastClickTime = now
-              this.lastClickCardId = interaction.targetCardId
-              this.lastClickScreen = { x: event.screen.x, y: event.screen.y }
-            }
           }
         } else if (interaction.mode === 'marquee-select') {
           this.editor.clearGuides()

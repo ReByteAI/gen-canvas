@@ -204,6 +204,19 @@ export class KonvaAdapter {
             }),
           )
         }
+      } else if (card.contentRef && card.contentType === 'html') {
+        // Preview not ready yet — show loading indicator
+        group.add(
+          new Konva.Text({
+            x: frameRect.width / 2,
+            y: frameRect.height / 2 - 10,
+            text: 'Rendering preview\u2026',
+            fontSize: 13,
+            fill: '#555d6b',
+            align: 'center',
+            offsetX: 60,
+          }),
+        )
       }
 
       group.add(
