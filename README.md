@@ -2,6 +2,8 @@
 
 **An open-source Figma-like container for generative content.**
 
+![kanva-editor demo](.github/assets/demo-screenshot.png)
+
 AI agents generate a lot of stuff — UI screens, forms, landing pages, dashboards, documents, code. Today that output lands in a chat thread or a file list. There's no good way to **see it all at once**, arrange it spatially, compare versions side by side, or interact with live outputs directly.
 
 kanva-editor is an infinite canvas that serves as a **container for everything your agent produces**. Think Figma, but instead of shapes and vectors, every object on the canvas is a **live artifact** — an HTML page, a running prototype, an image, a generated document. Users can pan, zoom, select, resize, and organize these artifacts exactly like they would in a design tool.
