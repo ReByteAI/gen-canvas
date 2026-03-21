@@ -3,7 +3,6 @@ import { screenToWorld } from '../core/geometry'
 import { resolveCardRect } from '../core/cardFrames'
 import type { EditorCore } from '../core/EditorCore'
 import { ToolStateMachine } from '../core/ToolStateMachine'
-import { LiveOverlayManager } from './LiveOverlayManager'
 import type { HitTarget, Point, RecordId, ResizeHandle } from '../core/types'
 
 type MaybeNode = Konva.Node | null | undefined
@@ -11,7 +10,6 @@ type MaybeNode = Konva.Node | null | undefined
 export class KonvaAdapter {
   private editor!: EditorCore
   private tools!: ToolStateMachine
-  private liveOverlays!: LiveOverlayManager
 
   private stage!: Konva.Stage
   private bgLayer!: Konva.Layer
@@ -52,7 +50,6 @@ export class KonvaAdapter {
     this.stage.add(this.overlayLayer)
 
     this.editor.setViewportSize(width, height)
-    this.liveOverlays = new LiveOverlayManager(this.editor, args.container)
     this.bindEvents()
 
     this.unsubscribe = this.editor.store.subscribe(() => {
@@ -64,7 +61,6 @@ export class KonvaAdapter {
 
   unmount(): void {
     this.unsubscribe?.()
-    this.liveOverlays?.destroy()
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
     this.stage?.destroy()
@@ -90,9 +86,6 @@ export class KonvaAdapter {
 
     this.overlayWorldGroup.position({ x: offsetX, y: offsetY })
     this.overlayWorldGroup.scale({ x: scale, y: scale })
-
-    // Sync live iframe overlays FIRST so renderCards knows which cards have active iframes
-    this.liveOverlays.update()
 
     this.renderBackground()
     this.renderCards(cards)
@@ -135,19 +128,17 @@ export class KonvaAdapter {
         attrs: { editorRole: 'card-body', cardId: card.id },
       })
 
-      // Only show the Konva background when no live iframe is covering this card
-      const hasLiveOverlay = this.liveOverlays.hasOverlay(card.id)
       group.add(
         new Konva.Rect({
           x: 0,
           y: 0,
           width: frameRect.width,
           height: frameRect.height,
-          fill: hasLiveOverlay ? 'transparent' : '#1d232b',
-          stroke: hasLiveOverlay ? 'transparent' : '#2f3944',
+          fill: '#1d232b',
+          stroke: '#2f3944',
           strokeWidth: 1,
           cornerRadius: 10,
-          shadowBlur: hasLiveOverlay ? 0 : 8,
+          shadowBlur: 8,
           shadowOpacity: 0.08,
         }),
       )
