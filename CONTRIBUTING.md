@@ -1,12 +1,12 @@
-# Contributing to kanva-editor
+# Contributing to gen-canvas
 
 Thanks for your interest in contributing! This document covers the process for contributing to this project.
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/nicognaW/kanva-editor.git
-cd kanva-editor
+git clone https://github.com/ReByteAI/gen-canvas.git
+cd gen-canvas
 npm install
 ```
 

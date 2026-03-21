@@ -69,4 +69,4 @@ editor.store.subscribe(() => {
   snapPill.classList.toggle('snap-on', rt.snap.enabled)
 })
 
-console.log('kanva-editor demo loaded. Access `editor` in console.')
+console.log('gen-canvas demo loaded. Access `editor` in console.')

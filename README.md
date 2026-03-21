@@ -1,12 +1,12 @@
-# kanva-editor
+# gen-canvas
 
 **Figma for GenAI content.**
 
-![kanva-editor demo](.github/assets/demo-screenshot.png)
+![gen-canvas demo](.github/assets/demo-screenshot.png)
 
 AI agents generate a lot of stuff — UI screens, forms, landing pages, dashboards, documents, code. Today that output lands in a chat thread or a file list. There's no good way to **see it all at once**, arrange it spatially, compare versions side by side, or interact with live outputs directly.
 
-kanva-editor is an infinite canvas that serves as a **container for everything your agent produces**. Think Figma, but instead of shapes and vectors, every object on the canvas is a **live artifact** — an HTML page, a running prototype, an image, a generated document. Users can pan, zoom, select, resize, and organize these artifacts exactly like they would in a design tool.
+gen-canvas is an infinite canvas that serves as a **container for everything your agent produces**. Think Figma, but instead of shapes and vectors, every object on the canvas is a **live artifact** — an HTML page, a running prototype, an image, a generated document. Users can pan, zoom, select, resize, and organize these artifacts exactly like they would in a design tool.
 
 This is the missing layer between your AI agent and your user.
 
@@ -20,7 +20,7 @@ When an agent generates 10 screens, a form, and an API doc in one session, where
 
 What you actually want is a **2D workspace** where every generated artifact is a card you can see, arrange, zoom into, and interact with — and where the agent can keep adding, updating, and refining cards as it works.
 
-## What kanva-editor Does
+## What gen-canvas Does
 
 It's an open-source editing kernel built on [Konva.js](https://konvajs.org/) that gives you:
 
@@ -76,7 +76,7 @@ The core has **zero dependency on Konva or React**. The rendering adapter and Re
 ## Install
 
 ```bash
-npm install kanva-editor konva
+npm install gen-canvas konva
 ```
 
 ## Quick Start
@@ -85,7 +85,7 @@ npm install kanva-editor konva
 import {
   EditorStore, EditorCore, PluginRegistry, HistoryManager, KonvaAdapter,
   ScreenCardPlugin,
-} from 'kanva-editor'
+} from 'gen-canvas'
 
 const store = new EditorStore({ records, runtime })
 const plugins = new PluginRegistry()
@@ -136,8 +136,8 @@ The card appears on the canvas. The user can drag it, resize it, zoom into it to
 ## Development
 
 ```bash
-git clone https://github.com/nicognaW/kanva-editor.git
-cd kanva-editor
+git clone https://github.com/ReByteAI/gen-canvas.git
+cd gen-canvas
 npm install
 npm run demo         # demo at localhost:3100
 npm run dev          # watch mode build
