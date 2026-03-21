@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+demo/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env
+.env
+.env.local

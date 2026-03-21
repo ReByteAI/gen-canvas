@@ -1,0 +1,41 @@
+name: Bug Report
+description: Report a bug
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Create an editor with...
+        2. Call editor.selectCard(...)
+        3. See error...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: kanva-editor version
+      placeholder: "0.1.0"
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, browser
+      placeholder: "macOS 15, Node 20, Chrome 130"

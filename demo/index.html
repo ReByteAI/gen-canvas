@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>kanva-editor demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0b; font-family: 'Inter', system-ui, sans-serif; }
+    #editor-root { width: 100%; height: 100%; position: relative; }
+
+    /* Toolbar overlay */
+    .toolbar {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(24, 24, 27, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .toolbar button {
+      background: none;
+      border: none;
+      color: #a1a1aa;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .toolbar button:hover { background: rgba(255,255,255,0.06); color: #e4e4e7; }
+    .toolbar button.active { background: #fff; color: #000; }
+    .toolbar .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.08); margin: 0 4px; }
+
+    /* Status bar */
+    .status-bar {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pill {
+      background: rgba(24, 24, 27, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: #a1a1aa;
+      font-family: inherit;
+    }
+    .pill.snap-on { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
+
+    /* Help hint */
+    .help-hint {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 100;
+      background: rgba(24, 24, 27, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 11px;
+      color: #71717a;
+      line-height: 1.7;
+    }
+    .help-hint kbd {
+      display: inline-block;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: inherit;
+      font-size: 10px;
+      color: #a1a1aa;
+    }
+  </style>
+</head>
+<body>
+  <div id="editor-root"></div>
+
+  <div class="toolbar" id="toolbar">
+    <button id="btn-select" class="active" title="Select tool (V)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2l3.5 12 2.5-4.5L13.5 7z"/></svg>
+    </button>
+    <button id="btn-hand" title="Hand tool (H)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5v7M5.5 4v6.5a2.5 2.5 0 005 0V4M3 6.5v4a5 5 0 0010 0v-4"/></svg>
+    </button>
+    <div class="sep"></div>
+    <button id="btn-zoom-fit" title="Zoom to fit">Fit</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="pill" id="snap-pill">Snap</div>
+    <div class="pill" id="zoom-pill">100%</div>
+  </div>
+
+  <div class="help-hint">
+    <kbd>V</kbd> Select &nbsp; <kbd>H</kbd> Hand &nbsp; <kbd>Space</kbd> Pan &nbsp; <kbd>Scroll</kbd> Zoom<br>
+    <kbd>Click</kbd> Select &nbsp; <kbd>Dbl-click</kbd> Focus &nbsp; <kbd>Right-click</kbd> Menu &nbsp; <kbd>Del</kbd> Delete<br>
+    <kbd>Arrow</kbd> Nudge &nbsp; <kbd>Shift+Arrow</kbd> Nudge 10px &nbsp; <kbd>Cmd+Z</kbd> Undo
+  </div>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
