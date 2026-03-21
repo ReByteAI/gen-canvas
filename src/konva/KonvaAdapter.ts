@@ -150,7 +150,28 @@ export class KonvaAdapter {
         }),
       )
 
-      const imageUrl = descriptor.src
+      // Resolve thumbnail: use thumbnailRef, or for image-type cards resolve contentRef
+      let imageUrl = descriptor.src
+      if (!imageUrl && card.thumbnailRef) {
+        try {
+          const resolved = this.editor.content.resolve(card.thumbnailRef, 'image')
+          if (!(resolved instanceof Promise) && resolved.type === 'image') {
+            imageUrl = resolved.src
+          }
+        } catch {
+          // no thumbnail available
+        }
+      }
+      if (!imageUrl && card.contentRef && card.contentType === 'image') {
+        try {
+          const resolved = this.editor.content.resolve(card.contentRef, 'image')
+          if (!(resolved instanceof Promise) && resolved.type === 'image') {
+            imageUrl = resolved.src
+          }
+        } catch {
+          // no content available
+        }
+      }
       if (imageUrl) {
         const img = this.getImage(imageUrl)
         if (img) {

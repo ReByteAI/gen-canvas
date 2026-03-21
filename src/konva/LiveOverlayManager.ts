@@ -1,6 +1,6 @@
 import { worldToScreen } from '../core/geometry'
 import type { EditorCore } from '../core/EditorCore'
-import type { CardRecord, CameraState } from '../core/types'
+import type { CardRecord, CameraState, ResolvedContent } from '../core/types'
 
 /** Minimum screen-space area (px^2) before a live overlay is shown */
 const MIN_SCREEN_AREA = 120 * 120
@@ -8,8 +8,6 @@ const MIN_SCREEN_AREA = 120 * 120
 export interface LiveOverlayManagerOptions {
   /** Minimum screen-space area before live iframe is mounted. Default: 14400 (120x120) */
   minScreenArea?: number
-  /** Extra CSS class on the overlay container */
-  containerClass?: string
 }
 
 interface MountedOverlay {
@@ -49,8 +47,8 @@ export class LiveOverlayManager {
 
     if (!suppressOverlays) {
       for (const card of cards) {
-        if (!card.content) continue
-        if (card.content.kind === 'image') continue // images render in Konva
+        if (!card.contentRef || !card.contentType) continue
+        if (card.contentType === 'image') continue // images render in Konva
 
         const screenRect = this.getScreenRect(card, camera)
         const screenArea = screenRect.width * screenRect.height
@@ -72,7 +70,7 @@ export class LiveOverlayManager {
     // Mount or update wanted overlays
     for (const cardId of wantedIds) {
       const card = this.editor.getCard(cardId)
-      if (!card || !card.content || card.content.kind === 'image') continue
+      if (!card || !card.contentRef || !card.contentType) continue
 
       const screenRect = this.getScreenRect(card, camera)
       let overlay = this.overlays.get(cardId)
@@ -124,16 +122,34 @@ export class LiveOverlayManager {
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups')
     iframe.title = card.title
 
-    if (card.content?.kind === 'url') {
-      iframe.src = card.content.url
-    } else if (card.content?.kind === 'html') {
-      iframe.srcdoc = card.content.html
+    // Resolve content through the provider
+    if (card.contentRef && card.contentType) {
+      const resolved = this.editor.content.resolve(card.contentRef, card.contentType)
+      if (resolved instanceof Promise) {
+        resolved.then((content) => this.applyContent(iframe, content))
+      } else {
+        this.applyContent(iframe, resolved)
+      }
     }
 
     wrapper.appendChild(iframe)
     this.container.appendChild(wrapper)
 
     return { cardId: card.id, iframe, wrapper }
+  }
+
+  private applyContent(iframe: HTMLIFrameElement, content: ResolvedContent): void {
+    switch (content.type) {
+      case 'html':
+        iframe.srcdoc = content.html
+        break
+      case 'url':
+        iframe.src = content.url
+        break
+      case 'image':
+        iframe.srcdoc = `<html><body style="margin:0"><img src="${content.src}" style="width:100%;height:100%;object-fit:cover"></body></html>`
+        break
+    }
   }
 
   private getScreenRect(card: CardRecord, camera: CameraState) {

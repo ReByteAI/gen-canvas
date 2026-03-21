@@ -14,12 +14,8 @@ export function PromptContextChip({ editor }: PromptContextChipProps) {
   return (
     <div className="inline-flex max-w-[320px] items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white shadow">
       <div className="h-5 w-5 shrink-0 overflow-hidden rounded bg-neutral-700">
-        {card.previewThumbnailUrl ? (
-          <img
-            src={card.previewThumbnailUrl}
-            alt={card.title}
-            className="h-full w-full object-cover"
-          />
+        {card.thumbnailRef ? (
+          <img src={card.thumbnailRef} alt={card.title} className="h-full w-full object-cover" />
         ) : null}
       </div>
 

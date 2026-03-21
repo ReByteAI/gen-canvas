@@ -11,10 +11,12 @@ import {
   snapResizeToObjects,
 } from './snapping'
 import { IntentBus } from './IntentBus'
+import { PassThroughContentProvider } from './ContentProvider'
 import type {
   BindingRecord,
   CardRecord,
   ClipboardPayload,
+  ContentProvider,
   EditorAPI,
   EditorIntent,
   Point,
@@ -41,6 +43,7 @@ export class EditorCore implements EditorAPI {
   readonly plugins: PluginRegistry
   readonly history: HistoryManager
   readonly intents: IntentBus
+  readonly content: ContentProvider
 
   private pendingGesture:
     | {
@@ -56,11 +59,13 @@ export class EditorCore implements EditorAPI {
     plugins?: PluginRegistry
     history?: HistoryManager
     intents?: IntentBus
+    content?: ContentProvider
   }) {
     this.store = args.store
     this.plugins = args.plugins ?? new PluginRegistry()
     this.history = args.history ?? new HistoryManager()
     this.intents = args.intents ?? new IntentBus()
+    this.content = args.content ?? new PassThroughContentProvider()
   }
 
   // ---------------------------------------------------------------------------

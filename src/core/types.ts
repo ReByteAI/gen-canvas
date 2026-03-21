@@ -40,28 +40,11 @@ export interface Rect {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Card content — what a card renders
+// Content reference — what a card points to (layout-only, no bytes)
 // ---------------------------------------------------------------------------
 
-/** URL content: rendered in an iframe via src= */
-export interface CardContentUrl {
-  kind: 'url'
-  url: string
-}
-
-/** Raw HTML content: rendered in an iframe via srcdoc= */
-export interface CardContentHtml {
-  kind: 'html'
-  html: string
-}
-
-/** Static image content: rendered as an image in Konva */
-export interface CardContentImage {
-  kind: 'image'
-  src: string
-}
-
-export type CardContent = CardContentUrl | CardContentHtml | CardContentImage
+/** Built-in content types. Users can extend with custom string types. */
+export type ContentType = 'html' | 'image' | 'url' | (string & {})
 
 export interface CardRecord {
   id: RecordId
@@ -79,11 +62,14 @@ export interface CardRecord {
   locked: boolean
   favorite: boolean
 
-  /** Primary content — determines what the card renders */
-  content?: CardContent
+  /** Reference to content — resolved at runtime by a ContentProvider */
+  contentRef?: string
 
-  /** Fallback thumbnail for zoomed-out preview (used when content is url/html) */
-  previewThumbnailUrl?: string
+  /** What kind of content this ref resolves to */
+  contentType?: ContentType
+
+  /** Optional thumbnail ref for zoomed-out preview */
+  thumbnailRef?: string
 
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -110,6 +96,43 @@ export interface ProvenanceRecord {
   createdByMessageId?: string
   lastUpdatedByMessageId?: string
   operationIds: string[]
+}
+
+// ---------------------------------------------------------------------------
+// Content provider — resolves refs to renderable content at runtime
+// ---------------------------------------------------------------------------
+
+/** What a ContentProvider returns after resolving a ref */
+export interface ResolvedContentHtml {
+  type: 'html'
+  html: string
+}
+export interface ResolvedContentImage {
+  type: 'image'
+  src: string
+}
+export interface ResolvedContentUrl {
+  type: 'url'
+  url: string
+}
+export interface ResolvedContentCustom {
+  type: 'custom'
+  contentType: string
+  data: unknown
+}
+
+export type ResolvedContent =
+  | ResolvedContentHtml
+  | ResolvedContentImage
+  | ResolvedContentUrl
+  | ResolvedContentCustom
+
+/**
+ * Resolves content refs to actual renderable content.
+ * Users implement this to plug in their storage backend.
+ */
+export interface ContentProvider {
+  resolve(ref: string, contentType: ContentType): Promise<ResolvedContent> | ResolvedContent
 }
 
 export interface RevisionRecord {

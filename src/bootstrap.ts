@@ -3,6 +3,7 @@ import { EditorCore } from './core/EditorCore'
 import { PluginRegistry } from './core/PluginRegistry'
 import { HistoryManager } from './core/HistoryManager'
 import { IntentBus } from './core/IntentBus'
+import { InMemoryContentProvider } from './core/ContentProvider'
 import { ScreenCardPlugin } from './core/plugins/ScreenCardPlugin'
 import { PrototypeCardPlugin } from './core/plugins/PrototypeCardPlugin'
 import { DocumentCardPlugin } from './core/plugins/DocumentCardPlugin'
@@ -473,8 +474,56 @@ const CAP_IMAGE = { ...CAP_FULL, liveOverlay: false }
 // Demo cards — 10 cards with real images, URLs, and HTML
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Content store — all content lives here, cards only hold refs
+// ---------------------------------------------------------------------------
+
+const demoContent = new InMemoryContentProvider()
+
+// HTML content — stored by ref key
+demoContent.set('landing-page', { type: 'html', html: LANDING_PAGE_HTML })
+demoContent.set('pricing-page', { type: 'html', html: PRICING_PAGE_HTML })
+demoContent.set('signup-form', { type: 'html', html: SIGNUP_FORM_HTML })
+demoContent.set('dashboard', { type: 'html', html: DASHBOARD_HTML })
+demoContent.set('mobile-app', { type: 'html', html: MOBILE_APP_HTML })
+demoContent.set('chat-ui', { type: 'html', html: CHAT_UI_HTML })
+
+// Image content — ref is the URL, resolved as-is
+demoContent.set('hero-photo', {
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1040&h=680&fit=crop',
+})
+demoContent.set('product-shot', {
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=880&h=600&fit=crop',
+})
+
+// URL content — ref is the URL itself
+demoContent.set('wikipedia', {
+  type: 'url',
+  url: 'https://en.m.wikipedia.org/wiki/Infinite_canvas',
+})
+demoContent.set('mdn-docs', {
+  type: 'url',
+  url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe',
+})
+
+// Thumbnails
+demoContent.set('thumb-wikipedia', {
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=960&h=800&fit=crop',
+})
+demoContent.set('thumb-mdn', {
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=960&h=1200&fit=crop',
+})
+
+// ---------------------------------------------------------------------------
+// Demo cards — layout only, no content bytes
+// ---------------------------------------------------------------------------
+
 const DEMO_CARDS: CardRecord[] = [
-  // Row 1
+  // Row 1: HTML cards
   {
     id: 'card_1',
     type: 'screen',
@@ -489,7 +538,8 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: true,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: LANDING_PAGE_HTML },
+    contentRef: 'landing-page',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
   {
@@ -506,7 +556,8 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: PRICING_PAGE_HTML },
+    contentRef: 'pricing-page',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
   {
@@ -523,11 +574,12 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: SIGNUP_FORM_HTML },
+    contentRef: 'signup-form',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
 
-  // Row 2
+  // Row 2: More HTML cards
   {
     id: 'card_4',
     type: 'screen',
@@ -542,7 +594,8 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: true,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: DASHBOARD_HTML },
+    contentRef: 'dashboard',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
   {
@@ -559,7 +612,8 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: MOBILE_APP_HTML },
+    contentRef: 'mobile-app',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
   {
@@ -576,11 +630,12 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'html', html: CHAT_UI_HTML },
+    contentRef: 'chat-ui',
+    contentType: 'html',
     capabilities: CAP_FULL,
   },
 
-  // Row 3: Real images
+  // Row 3: Image cards
   {
     id: 'card_7',
     type: 'screen',
@@ -595,10 +650,8 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: {
-      kind: 'image',
-      src: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1040&h=680&fit=crop',
-    },
+    contentRef: 'hero-photo',
+    contentType: 'image',
     capabilities: CAP_IMAGE,
   },
   {
@@ -615,14 +668,12 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: {
-      kind: 'image',
-      src: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=880&h=600&fit=crop',
-    },
+    contentRef: 'product-shot',
+    contentType: 'image',
     capabilities: CAP_IMAGE,
   },
 
-  // Real URLs
+  // URL cards
   {
     id: 'card_9',
     type: 'prototype',
@@ -637,9 +688,9 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: { kind: 'url', url: 'https://en.m.wikipedia.org/wiki/Infinite_canvas' },
-    previewThumbnailUrl:
-      'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=960&h=800&fit=crop',
+    contentRef: 'wikipedia',
+    contentType: 'url',
+    thumbnailRef: 'thumb-wikipedia',
     capabilities: CAP_FULL,
   },
   {
@@ -656,12 +707,9 @@ const DEMO_CARDS: CardRecord[] = [
     favorite: false,
     createdAt: now,
     updatedAt: now,
-    content: {
-      kind: 'url',
-      url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe',
-    },
-    previewThumbnailUrl:
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=960&h=1200&fit=crop',
+    contentRef: 'mdn-docs',
+    contentType: 'url',
+    thumbnailRef: 'thumb-mdn',
     capabilities: CAP_FULL,
   },
 ]
@@ -753,6 +801,7 @@ export function createDemoEditor(container: HTMLDivElement) {
     plugins,
     history: new HistoryManager(),
     intents: new IntentBus(),
+    content: demoContent,
   })
 
   const adapter = new KonvaAdapter()

@@ -7,8 +7,7 @@ export class DocumentCardPlugin extends ScreenCardPlugin {
   override getRenderDescriptor(card: CardRecord): RenderDescriptor {
     return {
       kind: 'document-preview',
-      src:
-        card.previewThumbnailUrl ?? (card.content?.kind === 'image' ? card.content.src : undefined),
+      src: card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined),
       title: card.title,
       icon: 'document',
     }

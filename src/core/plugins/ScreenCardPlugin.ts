@@ -26,8 +26,7 @@ export class ScreenCardPlugin implements CardPlugin<CardRecord> {
   getRenderDescriptor(card: CardRecord): RenderDescriptor {
     return {
       kind: 'image-preview',
-      src:
-        card.previewThumbnailUrl ?? (card.content?.kind === 'image' ? card.content.src : undefined),
+      src: card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined),
       title: card.title,
       icon: 'screen',
     }

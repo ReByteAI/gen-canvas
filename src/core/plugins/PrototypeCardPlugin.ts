@@ -7,8 +7,7 @@ export class PrototypeCardPlugin extends ScreenCardPlugin {
   override getRenderDescriptor(card: CardRecord): RenderDescriptor {
     return {
       kind: 'prototype-preview',
-      src:
-        card.previewThumbnailUrl ?? (card.content?.kind === 'image' ? card.content.src : undefined),
+      src: card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined),
       title: card.title,
       icon: 'prototype',
     }
