@@ -7,6 +7,9 @@ export { ToolStateMachine } from './core/ToolStateMachine'
 export { IntentBus } from './core/IntentBus'
 export { BrowserDocumentPersistence } from './core/DocumentPersistence'
 
+// Preview rendering
+export { renderHtmlToImage, PreviewCache } from './core/PreviewRenderer'
+
 // Content providers
 export {
   InMemoryContentProvider,

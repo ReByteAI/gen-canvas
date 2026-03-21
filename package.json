@@ -17,6 +17,11 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js",
       "require": "./dist/react.cjs"
+    },
+    "./bootstrap": {
+      "types": "./dist/bootstrap.d.ts",
+      "import": "./dist/bootstrap.js",
+      "require": "./dist/bootstrap.cjs"
     }
   },
   "files": [
@@ -97,5 +102,8 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "dom-to-image-more": "^3.7.2"
   }
 }

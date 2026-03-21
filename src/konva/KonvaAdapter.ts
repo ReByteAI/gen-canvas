@@ -1,6 +1,7 @@
 import Konva from 'konva'
 import { screenToWorld } from '../core/geometry'
 import { resolveCardRect } from '../core/cardFrames'
+import { PreviewCache } from '../core/PreviewRenderer'
 import type { EditorCore } from '../core/EditorCore'
 import { ToolStateMachine } from '../core/ToolStateMachine'
 import { LiveOverlayManager } from './LiveOverlayManager'
@@ -12,6 +13,7 @@ export class KonvaAdapter {
   private editor!: EditorCore
   private tools!: ToolStateMachine
   private liveOverlays!: LiveOverlayManager
+  private previewCache!: PreviewCache
 
   private stage!: Konva.Stage
   private bgLayer!: Konva.Layer
@@ -53,6 +55,7 @@ export class KonvaAdapter {
 
     this.editor.setViewportSize(width, height)
     this.liveOverlays = new LiveOverlayManager(this.editor, args.container)
+    this.previewCache = new PreviewCache(() => this.render())
     this.bindEvents()
 
     this.unsubscribe = this.editor.store.subscribe(() => {
@@ -149,20 +152,42 @@ export class KonvaAdapter {
         }),
       )
 
-      // Resolve an image URL for the card preview.
-      // Try thumbnailRef first, then contentRef for image-type cards.
-      // All refs go through the content provider to get actual URLs.
+      // Resolve a preview image for the card.
+      // For HTML cards: render via the preview pipeline (HTML → hidden iframe → rasterize → PNG)
+      // For image cards: resolve through content provider
+      // For URL cards: use thumbnailRef if available
       let imageUrl: string | undefined
-      const refToResolve =
-        card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined)
-      if (refToResolve) {
+
+      if (card.contentType === 'html' && card.contentRef) {
+        // Try to get a rasterized preview of the HTML content
         try {
-          const resolved = this.editor.content.resolve(refToResolve, 'image')
-          if (!(resolved instanceof Promise) && resolved.type === 'image') {
-            imageUrl = resolved.src
+          const resolved = this.editor.content.resolve(card.contentRef, 'html')
+          if (!(resolved instanceof Promise) && resolved.type === 'html') {
+            const cacheKey = `${card.id}:${card.contentRef}`
+            imageUrl = this.previewCache.request(cacheKey, {
+              html: resolved.html,
+              width: Math.round(frameRect.width),
+              height: Math.round(frameRect.height),
+            })
           }
         } catch {
-          // ref not resolvable — no preview
+          // fallback below
+        }
+      }
+
+      // Fallback: resolve thumbnailRef or image contentRef through provider
+      if (!imageUrl) {
+        const refToResolve =
+          card.thumbnailRef ?? (card.contentType === 'image' ? card.contentRef : undefined)
+        if (refToResolve) {
+          try {
+            const resolved = this.editor.content.resolve(refToResolve, 'image')
+            if (!(resolved instanceof Promise) && resolved.type === 'image') {
+              imageUrl = resolved.src
+            }
+          } catch {
+            // no preview available
+          }
         }
       }
       if (imageUrl) {
