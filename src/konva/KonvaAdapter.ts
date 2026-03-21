@@ -3,6 +3,7 @@ import { screenToWorld } from '../core/geometry'
 import { resolveCardRect } from '../core/cardFrames'
 import type { EditorCore } from '../core/EditorCore'
 import { ToolStateMachine } from '../core/ToolStateMachine'
+import { LiveOverlayManager } from './LiveOverlayManager'
 import type { HitTarget, Point, RecordId, ResizeHandle } from '../core/types'
 
 type MaybeNode = Konva.Node | null | undefined
@@ -10,6 +11,7 @@ type MaybeNode = Konva.Node | null | undefined
 export class KonvaAdapter {
   private editor!: EditorCore
   private tools!: ToolStateMachine
+  private liveOverlays!: LiveOverlayManager
 
   private stage!: Konva.Stage
   private bgLayer!: Konva.Layer
@@ -50,6 +52,7 @@ export class KonvaAdapter {
     this.stage.add(this.overlayLayer)
 
     this.editor.setViewportSize(width, height)
+    this.liveOverlays = new LiveOverlayManager(this.editor, args.container)
     this.bindEvents()
 
     this.unsubscribe = this.editor.store.subscribe(() => {
@@ -61,6 +64,7 @@ export class KonvaAdapter {
 
   unmount(): void {
     this.unsubscribe?.()
+    this.liveOverlays?.destroy()
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
     this.stage?.destroy()
@@ -94,6 +98,10 @@ export class KonvaAdapter {
     this.bgLayer.batchDraw()
     this.contentLayer.batchDraw()
     this.overlayLayer.batchDraw()
+
+    // Mount/unmount focused card iframe AFTER canvas renders.
+    // Only the focused card gets a live iframe — all others are Konva previews.
+    this.liveOverlays.update()
   }
 
   // ---------------------------------------------------------------------------
