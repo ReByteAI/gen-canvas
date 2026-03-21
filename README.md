@@ -71,7 +71,7 @@ KonvaAdapter       Canvas rendering + LiveOverlayManager (iframes)
 React Shell        DOM UI: context menus, toolbars, hooks
 ```
 
-The core has **zero dependency on Konva or React**. The rendering adapter and React hooks are separate layers. You could swap the renderer without touching the editing logic.
+gen-canvas uses [Konva.js](https://konvajs.org/) for canvas rendering and React for DOM UI. The editing logic (store, selection, camera, history, snapping) is separated from the rendering layer, so the core modules have no direct Konva or React imports — but the project as a whole depends on both.
 
 ## Install
 
