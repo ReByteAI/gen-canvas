@@ -9,6 +9,69 @@ import type { HitTarget, Point, RecordId, ResizeHandle } from '../core/types'
 
 type MaybeNode = Konva.Node | null | undefined
 
+export type CanvasTheme = 'light' | 'dark'
+
+interface ThemePalette {
+  canvasBg: string
+  cardFill: string
+  cardStroke: string
+  titleText: string
+  focusBtnBg: string
+  focusBtnIcon: string
+  loadingText: string
+  starColor: string
+  // Selection (shared)
+  selectionStroke: string
+  resizeHandleFill: string
+  resizeHandleStroke: string
+  dimBadgeBg: string
+  dimBadgeText: string
+  multiSelectStroke: string
+  marqueeStroke: string
+  marqueeFill: string
+  snapGuide: string
+}
+
+const DARK_PALETTE: ThemePalette = {
+  canvasBg: '#111418',
+  cardFill: '#1d232b',
+  cardStroke: '#2f3944',
+  titleText: '#d6dde8',
+  focusBtnBg: '#2a2f38',
+  focusBtnIcon: '#8b95a5',
+  loadingText: '#555d6b',
+  starColor: '#f7c948',
+  selectionStroke: '#6ea8fe',
+  resizeHandleFill: '#6ea8fe',
+  resizeHandleStroke: '#dce8ff',
+  dimBadgeBg: '#4754ff',
+  dimBadgeText: '#fff',
+  multiSelectStroke: '#8bb9ff',
+  marqueeStroke: '#6ea8fe',
+  marqueeFill: 'rgba(106, 168, 254, 0.08)',
+  snapGuide: '#ff5ec4',
+}
+
+const LIGHT_PALETTE: ThemePalette = {
+  canvasBg: '#f5f5f4',
+  cardFill: '#ffffff',
+  cardStroke: '#e7e5e4',
+  titleText: '#44403c',
+  focusBtnBg: '#f5f5f4',
+  focusBtnIcon: '#78716c',
+  loadingText: '#a8a29e',
+  starColor: '#f59e0b',
+  selectionStroke: '#3b82f6',
+  resizeHandleFill: '#3b82f6',
+  resizeHandleStroke: '#bfdbfe',
+  dimBadgeBg: '#3b82f6',
+  dimBadgeText: '#fff',
+  multiSelectStroke: '#60a5fa',
+  marqueeStroke: '#3b82f6',
+  marqueeFill: 'rgba(59, 130, 246, 0.08)',
+  snapGuide: '#ec4899',
+}
+
 export class KonvaAdapter {
   private editor!: EditorCore
   private tools!: ToolStateMachine
@@ -26,9 +89,12 @@ export class KonvaAdapter {
   private unsubscribe?: () => void
   private imageCache = new Map<string, HTMLImageElement>()
 
-  mount(args: { container: HTMLDivElement; editor: EditorCore }): void {
+  private palette: ThemePalette = DARK_PALETTE
+
+  mount(args: { container: HTMLDivElement; editor: EditorCore; theme?: CanvasTheme }): void {
     this.editor = args.editor
     this.tools = new ToolStateMachine(args.editor)
+    this.palette = args.theme === 'light' ? LIGHT_PALETTE : DARK_PALETTE
 
     const width = args.container.clientWidth
     const height = args.container.clientHeight
@@ -63,6 +129,16 @@ export class KonvaAdapter {
     })
 
     this.render()
+  }
+
+  setTheme(theme: CanvasTheme): void {
+    this.palette = theme === 'light' ? LIGHT_PALETTE : DARK_PALETTE
+    this.previewCache.clear()
+    this.render()
+  }
+
+  getTheme(): CanvasTheme {
+    return this.palette === LIGHT_PALETTE ? 'light' : 'dark'
   }
 
   unmount(): void {
@@ -120,13 +196,14 @@ export class KonvaAdapter {
         y: 0,
         width: this.stage.width(),
         height: this.stage.height(),
-        fill: '#111418',
+        fill: this.palette.canvasBg,
       }),
     )
   }
 
   private renderCards(cards: ReturnType<EditorCore['getVisibleCards']>): void {
     this.worldGroup.destroyChildren()
+    const p = this.palette
 
     for (const card of cards.sort((a, b) => a.zIndex - b.zIndex)) {
       const frameRect = resolveCardRect(this.editor, card)
@@ -143,8 +220,8 @@ export class KonvaAdapter {
           y: 0,
           width: frameRect.width,
           height: frameRect.height,
-          fill: '#1d232b',
-          stroke: '#2f3944',
+          fill: p.cardFill,
+          stroke: p.cardStroke,
           strokeWidth: 1,
           cornerRadius: 10,
           shadowBlur: 8,
@@ -212,7 +289,7 @@ export class KonvaAdapter {
             y: frameRect.height / 2 - 10,
             text: 'Rendering preview\u2026',
             fontSize: 13,
-            fill: '#555d6b',
+            fill: p.loadingText,
             align: 'center',
             offsetX: 60,
           }),
@@ -225,7 +302,7 @@ export class KonvaAdapter {
           y: -24,
           text: `${this.iconForType(card.type)} ${card.title}`,
           fontSize: 14,
-          fill: '#d6dde8',
+          fill: p.titleText,
           fontStyle: '600',
         }),
       )
@@ -247,7 +324,7 @@ export class KonvaAdapter {
             y: btnY - 2,
             width: btnSize + 8,
             height: btnSize + 4,
-            fill: '#2a2f38',
+            fill: p.focusBtnBg,
             cornerRadius: 6,
             attrs: { editorRole: 'focus-button', cardId: card.id },
           }),
@@ -260,7 +337,7 @@ export class KonvaAdapter {
             y: btnY,
             text: '\u25B6',
             fontSize: 14,
-            fill: '#8b95a5',
+            fill: p.focusBtnIcon,
             attrs: { editorRole: 'focus-button', cardId: card.id },
           }),
         )
@@ -273,7 +350,7 @@ export class KonvaAdapter {
             y: 8,
             text: '\u2605',
             fontSize: 16,
-            fill: '#f7c948',
+            fill: p.starColor,
           }),
         )
       }
@@ -287,6 +364,7 @@ export class KonvaAdapter {
 
     const runtime = this.editor.getRuntime()
     const selected = this.editor.getSelectedCards()
+    const p = this.palette
 
     // Per-card selection outlines
     for (const card of selected) {
@@ -299,7 +377,7 @@ export class KonvaAdapter {
           y: frameRect.y,
           width: frameRect.width,
           height: frameRect.height,
-          stroke: '#6ea8fe',
+          stroke: p.selectionStroke,
           strokeWidth: 2 / runtime.camera.scale,
           cornerRadius: 10,
         }),
@@ -309,15 +387,15 @@ export class KonvaAdapter {
 
       // Resize handles
       const handles = this.handlePositions(frameRect)
-      for (const [handle, p] of Object.entries(handles) as [ResizeHandle, Point][]) {
+      for (const [handle, pt] of Object.entries(handles) as [ResizeHandle, Point][]) {
         this.overlayWorldGroup.add(
           new Konva.Rect({
-            x: p.x - 4 / runtime.camera.scale,
-            y: p.y - 4 / runtime.camera.scale,
+            x: pt.x - 4 / runtime.camera.scale,
+            y: pt.y - 4 / runtime.camera.scale,
             width: 8 / runtime.camera.scale,
             height: 8 / runtime.camera.scale,
-            fill: '#6ea8fe',
-            stroke: '#dce8ff',
+            fill: p.resizeHandleFill,
+            stroke: p.resizeHandleStroke,
             strokeWidth: 1 / runtime.camera.scale,
             attrs: { editorRole: 'resize-handle', cardId: card.id, handle },
           }),
@@ -333,14 +411,14 @@ export class KonvaAdapter {
         })
         label.add(
           new Konva.Tag({
-            fill: '#4754ff',
+            fill: p.dimBadgeBg,
             cornerRadius: 16 / runtime.camera.scale,
           }),
         )
         label.add(
           new Konva.Text({
             text: `${Math.round(frameRect.width)} \u00D7 ${Math.round(frameRect.height)}`,
-            fill: '#fff',
+            fill: p.dimBadgeText,
             fontSize: 12 / runtime.camera.scale,
             padding: 8 / runtime.camera.scale,
           }),
@@ -358,7 +436,7 @@ export class KonvaAdapter {
           y: selectionBounds.y,
           width: selectionBounds.width,
           height: selectionBounds.height,
-          stroke: '#8bb9ff',
+          stroke: p.multiSelectStroke,
           strokeWidth: 1.5 / runtime.camera.scale,
           dash: [8 / runtime.camera.scale, 6 / runtime.camera.scale],
           cornerRadius: 12 / runtime.camera.scale,
@@ -375,8 +453,8 @@ export class KonvaAdapter {
           y: marquee.y,
           width: marquee.width,
           height: marquee.height,
-          fill: 'rgba(106, 168, 254, 0.08)',
-          stroke: '#6ea8fe',
+          fill: p.marqueeFill,
+          stroke: p.marqueeStroke,
           strokeWidth: 1 / runtime.camera.scale,
           dash: [6 / runtime.camera.scale, 4 / runtime.camera.scale],
         }),
@@ -389,7 +467,7 @@ export class KonvaAdapter {
         this.overlayWorldGroup.add(
           new Konva.Line({
             points: [guide.value, guide.start, guide.value, guide.end],
-            stroke: '#ff5ec4',
+            stroke: p.snapGuide,
             strokeWidth: 1.5 / runtime.camera.scale,
             dash: [6 / runtime.camera.scale, 4 / runtime.camera.scale],
           }),
@@ -398,7 +476,7 @@ export class KonvaAdapter {
         this.overlayWorldGroup.add(
           new Konva.Line({
             points: [guide.start, guide.value, guide.end, guide.value],
-            stroke: '#ff5ec4',
+            stroke: p.snapGuide,
             strokeWidth: 1.5 / runtime.camera.scale,
             dash: [6 / runtime.camera.scale, 4 / runtime.camera.scale],
           }),

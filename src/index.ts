@@ -24,6 +24,7 @@ export { DocumentCardPlugin } from './core/plugins/DocumentCardPlugin'
 
 // Konva adapter
 export { KonvaAdapter } from './konva/KonvaAdapter'
+export type { CanvasTheme } from './konva/KonvaAdapter'
 export { LiveOverlayManager } from './konva/LiveOverlayManager'
 
 // Geometry

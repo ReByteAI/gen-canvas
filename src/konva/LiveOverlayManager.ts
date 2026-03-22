@@ -122,7 +122,7 @@ export class LiveOverlayManager {
     iframe.style.height = '100%'
     iframe.style.border = 'none'
     iframe.style.borderRadius = '10px'
-    iframe.style.background = '#fff'
+    iframe.style.background = 'transparent'
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups')
     iframe.title = card.title
 

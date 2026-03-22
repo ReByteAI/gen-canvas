@@ -328,6 +328,15 @@ export class EditorCore implements EditorAPI {
     const card = this.getCard(id)
     if (!card || !card.capabilities.selectable) return
 
+    // Bring selected card to front
+    const maxZ = Math.max(0, ...Object.values(this.store.getRecords().cards).map((c) => c.zIndex))
+    if (card.zIndex < maxZ) {
+      this.store.updateRecords((records) => {
+        const c = records.cards[id]
+        if (c) c.zIndex = maxZ + 1
+      })
+    }
+
     this.store.updateRuntime(
       (runtime) => {
         runtime.selection.selectedIds = additive
