@@ -87,6 +87,7 @@ export class KonvaAdapter {
   private overlayWorldGroup!: Konva.Group
 
   private unsubscribe?: () => void
+  private initialAnimationDone = false
   private imageCache = new Map<string, HTMLImageElement>()
 
   private palette: ThemePalette = DARK_PALETTE
@@ -129,6 +130,55 @@ export class KonvaAdapter {
     })
 
     this.render()
+    this.playEntranceAnimation()
+  }
+
+  private playEntranceAnimation(): void {
+    const groups = this.worldGroup.getChildren() as Konva.Group[]
+    if (groups.length === 0) {
+      this.initialAnimationDone = true
+      return
+    }
+
+    // Sort by position: top-left to bottom-right for stagger order
+    const sorted = [...groups].sort((a, b) => {
+      const ay = a.y() + a.x() * 0.3
+      const by = b.y() + b.x() * 0.3
+      return ay - by
+    })
+
+    const staggerMs = 60
+    const durationMs = 400
+
+    for (let i = 0; i < sorted.length; i++) {
+      const group = sorted[i]
+      const finalY = group.y()
+
+      // Start state: invisible, shifted down, slightly scaled
+      group.opacity(0)
+      group.y(finalY + 40)
+      group.scaleX(0.96)
+      group.scaleY(0.96)
+
+      const delay = i * staggerMs
+      setTimeout(() => {
+        new Konva.Tween({
+          node: group,
+          duration: durationMs / 1000,
+          opacity: 1,
+          y: finalY,
+          scaleX: 1,
+          scaleY: 1,
+          easing: Konva.Easings.EaseOut,
+        }).play()
+      }, delay)
+    }
+
+    // Mark done after all animations complete
+    const totalMs = sorted.length * staggerMs + durationMs
+    setTimeout(() => {
+      this.initialAnimationDone = true
+    }, totalMs)
   }
 
   setTheme(theme: CanvasTheme): void {
@@ -157,6 +207,9 @@ export class KonvaAdapter {
   }
 
   render(): void {
+    // Don't rebuild nodes during entrance animation — tweens would be destroyed
+    if (!this.initialAnimationDone && this.worldGroup?.getChildren().length > 0) return
+
     const runtime = this.editor.getRuntime()
     const cards = this.editor.getVisibleCards()
 
