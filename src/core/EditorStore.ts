@@ -49,6 +49,8 @@ export class EditorStore {
 
   updateRuntime(mutator: (draft: RuntimeState) => void, changedKeys: string[] = ['__all__']): void {
     mutator(this.runtime)
+    // Create new top-level reference so useSyncExternalStore detects the change
+    this.runtime = { ...this.runtime }
     this.markRuntimeChanged(changedKeys)
   }
 
